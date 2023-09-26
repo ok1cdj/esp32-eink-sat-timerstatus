@@ -37,7 +37,7 @@
   HARDWARE ESP32 Dev Module
 
 */
-#define REV 20230924
+#define REV 20230926
 #include <Arduino.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
@@ -100,7 +100,7 @@ String epochToDateTime(long epochTime) {
 
   // Format the date and time as a string
   char formattedTime[20];
- 
+
   sprintf(formattedTime, "%02d.%02d.%04d %02d:%02d", tm.Day, tm.Month, tm.Year + 1970, tm.Hour, tm.Minute);
 
   // Return the formatted date and time as a String
@@ -164,11 +164,11 @@ void setup() {
   display.fillScreen(colorW);
   display.setTextColor(colorB);
   display.setFont(&Logisoso10pt7b);
-  display.setCursor(70, 150);  
+  display.setCursor(70, 150);
   display.println("Connected to:");
-  display.setCursor(70, 170); 
+  display.setCursor(70, 170);
   display.println("WiFi " + cfgWifiSSID + " " + String(WiFi.RSSI()) + " dBm");
-   display.setCursor(70, 190); 
+  display.setCursor(70, 190);
   display.println(WiFi.localIP());
   Serial.println(WiFi.localIP());
   display.display(false);
@@ -189,7 +189,7 @@ void setup() {
 
   // Initialize AsyncElegantOTA
   httpServer.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(200, "text/plain", "Satellite status, please got to /update for update..");
+    request->send(200, "text/plain", "Satellite status, please go to /update for update..");
   });
   AsyncElegantOTA.begin(&httpServer);
   httpServer.begin();
@@ -234,6 +234,7 @@ void loop() {
     for (JsonObject sat : satellites) {
       const char* satName = sat["sat"];
       const char* timestampString = sat["timestamp"];
+      size_t satNameLength = strlen(satName);
 
       // Print satellite name
       Serial.print("Satellite: ");
@@ -242,6 +243,11 @@ void loop() {
 
 
       display.print("  " + String(satName) + " ");
+      
+      for (size_t i = satNameLength; i < 7; i++) {
+        display.print(' '); // Print spaces 
+      }
+
       // Check if timestamp is null
       if (timestampString == nullptr) {
         Serial.println("Timestamp not available");
@@ -293,8 +299,10 @@ void loop() {
 
     }
     display.setCursor(10, 395);
-    display.print("WiFi " + cfgWifiSSID + " " + String(WiFi.RSSI()) + " dBm ");
-    display.println(WiFi.localIP());
+    display.print(cfgWifiSSID + " " + String(WiFi.RSSI()) + " dBm ");
+    display.print(WiFi.localIP());
+    display.print(" ");
+    display.print(REV);
     display.display(false);
     interval = refreshTime;
     previousMillis = currentMillis;
