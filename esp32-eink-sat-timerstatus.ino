@@ -142,7 +142,9 @@ void setup() {
   display.display(false);
   if (!SD.begin(SD_CS, spiSD)) {
     Serial.println("SD card initialization failed");
-    
+    display.setCursor(30, 160);
+    display.println("SD card initialization failed");
+    while ( true );
   }
   readConfig();
 
@@ -151,6 +153,7 @@ void setup() {
   display.println("Connecting...");
   display.setFont(&Logisoso8pt7b);
   display.setCursor(90, 190);
+  display.println(cfgWifiSSID);
   display.display(false);
 
   // Connect to Wi-Fi network
