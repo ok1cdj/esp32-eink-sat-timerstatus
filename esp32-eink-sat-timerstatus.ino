@@ -100,8 +100,8 @@ String epochToDateTime(long epochTime) {
 
   // Format the date and time as a string
   char formattedTime[20];
-  sprintf(formattedTime, "%04d-%02d-%02d %02d:%02d:%02d",
-          tm.Year + 1970, tm.Month, tm.Day, tm.Hour, tm.Minute, tm.Second);
+ 
+  sprintf(formattedTime, "%02d.%02d.%04d %02d:%02d", tm.Day, tm.Month, tm.Year + 1970, tm.Hour, tm.Minute);
 
   // Return the formatted date and time as a String
   return String(formattedTime);
@@ -151,7 +151,6 @@ void setup() {
   display.setFont(&Logisoso10pt7b);
   display.setCursor(70, 150);
   display.println("Connecting...");
-  display.setFont(&Logisoso8pt7b);
   display.setCursor(90, 190);
   display.println(cfgWifiSSID);
   display.display(false);
@@ -165,12 +164,11 @@ void setup() {
   display.fillScreen(colorW);
   display.setTextColor(colorB);
   display.setFont(&Logisoso10pt7b);
-  display.setCursor(70, 150);
+  display.setCursor(70, 150);  
   display.println("Connected to:");
-  display.setCursor(90, 220);
+  display.setCursor(70, 170); 
   display.println("WiFi " + cfgWifiSSID + " " + String(WiFi.RSSI()) + " dBm");
-  display.fillCircle(80, 220 - 7, 3, colorW);
-  display.setCursor(90, 250);
+   display.setCursor(70, 190); 
   display.println(WiFi.localIP());
   Serial.println(WiFi.localIP());
   display.display(false);
@@ -227,11 +225,11 @@ void loop() {
 
     display.fillScreen(colorW);
     display.setTextColor(colorB);
-    display.setCursor(10, 15);
+    display.setCursor(15, 18);
     display.setFont(&Logisoso10pt7b);
     display.print("Satellite status " + String(timeClient.getFormattedTime()) + " UTC ");
     display.setFont(&Logisoso8pt7b);
-    display.setCursor(0, 30);
+    display.setCursor(0, 35);
 
     for (JsonObject sat : satellites) {
       const char* satName = sat["sat"];
@@ -294,8 +292,9 @@ void loop() {
       }
 
     }
-
-
+    display.setCursor(10, 395);
+    display.print("WiFi " + cfgWifiSSID + " " + String(WiFi.RSSI()) + " dBm ");
+    display.println(WiFi.localIP());
     display.display(false);
     interval = refreshTime;
     previousMillis = currentMillis;
