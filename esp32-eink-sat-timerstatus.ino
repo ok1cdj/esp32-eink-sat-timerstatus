@@ -37,27 +37,28 @@
   HARDWARE ESP32 Dev Module
 
 */
-
+#define REV 20230924
+#include <Arduino.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <TimeLib.h>
+#include <SD.h>
 #include <SPI.h>
 #include <GxEPD2_BW.h>
 #include <AsyncElegantOTA.h>
 #include <AsyncTCP.h>
 
+
 // https://rop.nl/truetype2gfx/
+
 #include "Logisoso8pt7b.h"
 #include "Logisoso10pt7b.h"
-#include "Logisoso50pt7b.h"
 uint16_t colorB = GxEPD_BLACK;
 uint16_t colorW = GxEPD_WHITE;
 
-const char* ssid = "XXXX";
-const char* password = "XXXX";
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
 
@@ -71,7 +72,7 @@ bool SdCardPresentStatus   = false;
 unsigned long previousMillis = 0UL;
 unsigned long interval = 0UL;
 
-unsigned long refreshTime = 60000UL;
+unsigned long refreshTime = 300000UL;
 
 // Server URL
 const char*  server = "www.df2et.de";
@@ -112,12 +113,39 @@ void setup() {
   pinMode(SdCardPresentPin, INPUT);
   pinMode(2, OUTPUT);    // Set epaper transistor as output
   digitalWrite(2, HIGH); // turn on epaper transistor
-  delay(100);            // Delay so it has time to turn on
+  delay(100);     // Delay so it has time to turn on
   display.init();
   display.setRotation(eInkRotation); // 1 USB TOP, 3 USB DOWN | 0 default, 1 90°CW, 2 180°CW, 3 90°CCW
-
   display.fillScreen(colorW);
   display.setTextColor(colorB);
+  SdCardPresentStatus = !digitalRead(SdCardPresentPin);
+  Serial.println("Check microSD ");
+  if (SdCardPresentStatus != true) {
+    Serial.print("micro SD card is not inserted");
+    display.fillScreen(colorW);
+    display.setTextColor(colorB);
+    display.setFont(&Logisoso10pt7b);
+    display.setCursor(30, 120);
+    display.println("!");
+    display.setCursor(30, 160);
+    display.println("micro SD card is not inserted");
+    display.setCursor(30, 190);
+    display.println("Please insert card with");
+    display.setCursor(30, 220);
+    display.println("config.txt config file");
+    display.display(false);
+    while (SdCardPresentStatus != true) {
+      delay(1000);
+      SdCardPresentStatus = !digitalRead(SdCardPresentPin);
+    }
+  }
+  display.display(false);
+  if (!SD.begin(SD_CS, spiSD)) {
+    Serial.println("SD card initialization failed");
+    
+  }
+  readConfig();
+
   display.setFont(&Logisoso10pt7b);
   display.setCursor(70, 150);
   display.println("Connecting...");
@@ -126,7 +154,7 @@ void setup() {
   display.display(false);
 
   // Connect to Wi-Fi network
-  WiFi.begin(ssid, password);
+  WiFi.begin(cfgWifiSSID.c_str(), cfgWifiKey.c_str());
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
@@ -137,7 +165,7 @@ void setup() {
   display.setCursor(70, 150);
   display.println("Connected to:");
   display.setCursor(90, 220);
-  display.println("WiFi " + String(ssid) + " " + String(WiFi.RSSI()) + " dBm");
+  display.println("WiFi " + cfgWifiSSID + " " + String(WiFi.RSSI()) + " dBm");
   display.fillCircle(80, 220 - 7, 3, colorW);
   display.setCursor(90, 250);
   display.println(WiFi.localIP());
@@ -252,7 +280,7 @@ void loop() {
         display.print("m ");
         display.print(seconds);
         display.println("s ");
-        display.println("     N:A:08:48 23 L:08:58 156 M:35 D:10  ");
+        //display.println("     Next:A:08:48 23 L:08:58 156 M:35 D:10  "); //display next orbit when available in API
         display.println("");
       } else {
         Serial.print("timed-out: ");
@@ -290,7 +318,7 @@ void fetchJsonData() {
     while (client.connected()) {
       String line = client.readStringUntil('\n');
       if (line == "\r") {
-        Serial.println("headers received");
+        Serial.println("Headers received");
         break;
       }
     }
@@ -300,7 +328,33 @@ void fetchJsonData() {
       char c = client.read();
       jsonPayload = jsonPayload + String(c);
     }
-
+    Serial.println("Closing connectio to server!");
     client.stop();
   }
+}
+void readConfig() {
+  // Check if the configuration file exists
+  if (SD.exists(configFileName)) {
+    Serial.println("Reading config...");
+    // Read WiFi configuration from the file
+    File configFile = SD.open(configFileName, FILE_READ);
+    if (configFile) {
+      while (configFile.available()) {
+        String line = configFile.readStringUntil('\n');
+        int delimiterIndex = line.indexOf('=');
+        if (delimiterIndex != -1) {
+          String key = line.substring(0, delimiterIndex);
+          String value = line.substring(delimiterIndex + 1);
+          if (key == "wifi_ssid") {
+            cfgWifiSSID = value;
+          } else if (key == "wifi_key") {
+            cfgWifiKey = value;
+          }
+        }
+      }
+
+      // Close the file
+      configFile.close();
+    }
+  } else Serial.println("Config not found.");
 }

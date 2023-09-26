@@ -1,0 +1,2 @@
+wifi_ssid=XXXX
+wifi_key=1234567890
