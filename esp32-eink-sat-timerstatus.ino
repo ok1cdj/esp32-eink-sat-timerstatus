@@ -37,7 +37,7 @@
   HARDWARE ESP32 Dev Module
 
 */
-#define REV 20230926
+#define REV 20230927
 #include <Arduino.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
@@ -70,7 +70,9 @@ const int SdCardPresentPin = 33;
 bool SdCardPresentStatus   = false;
 
 unsigned long previousMillis = 0UL;
+unsigned long previousMillisCheck = 0UL;
 unsigned long interval = 0UL;
+unsigned long intervalCheck = 3000UL;
 
 unsigned long refreshTime = 300000UL;
 
@@ -243,9 +245,9 @@ void loop() {
 
 
       display.print("  " + String(satName) + " ");
-      
+
       for (size_t i = satNameLength; i < 7; i++) {
-        display.print(' '); // Print spaces 
+        display.print(' '); // Print spaces
       }
 
       // Check if timestamp is null
@@ -306,6 +308,14 @@ void loop() {
     display.display(false);
     interval = refreshTime;
     previousMillis = currentMillis;
+  }
+
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillisCheck >= intervalCheck)) {
+    Serial.print(millis());
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.reconnect();
+    previousMillisCheck = currentMillis;
   }
   AsyncElegantOTA.loop();
 }
