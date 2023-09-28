@@ -321,9 +321,11 @@ void loop() {
 }
 
 void fetchJsonData() {
+ 
   WiFiClientSecure client; // Changed to WiFiClientSecure
   client.setInsecure();
-
+  jsonPayload.clear();
+  jsonDoc.clear();
   Serial.println("\nStarting connection to server...");
   if (!client.connect(server, 443))
     Serial.println("Connection failed!");
@@ -348,6 +350,7 @@ void fetchJsonData() {
       char c = client.read();
       jsonPayload = jsonPayload + String(c);
     }
+    Serial.print(jsonPayload);
     Serial.println("Closing connectio to server!");
     client.stop();
   }
